@@ -2,17 +2,28 @@
 export async function main(ns) {
   const target = ns.args[0]
   const initialBudget = ns.args[1]
+  const maxBudget = ns.stock.getMaxShares(target)
+  
+  let currentBuy = 0
   let buyRange = false
   let sellRange = false
 
   //Disable superfluous logs
   ns.disableLog("sleep")
 
-  //For fifteen minutes, track the price of the stock, setting the max and min
+  //Check to see if the max buyin is possible
+  ns.print("Initial Budget set to: " + initialBudget)
+  if (typeof initialBudget == 'undefined'){
+    ns.print("Budget Set to Maximum.")
+  }else {
+    currentBuy = Math.floor(initialBudget / ns.stock.getAskPrice(target))
+    ns.print("Current Order Set to " + currentBuy + " shares at " + ns.formatNumber(ns.stock.getAskPrice(target)))
+  }
+
+
+  //For three minutes, track the price of the stock, setting the max and min
   let startTime = Date.now()
   const trackingInterval = (1000 * 60 * 3)
-  //let it ride
-  //const runningInterval = (1000 * 60 * 60 * 2)
   const timeoutInterval = (1000 * 60 * 10)
   let endTime = startTime + trackingInterval
   const prices = {
@@ -48,11 +59,7 @@ export async function main(ns) {
   ns.print("Final Results: Price $" + ns.formatNumber(prices.current) + " | Max: $" + ns.formatNumber(prices.max.price) + " | Min: $" + ns.formatNumber(prices.min.price))
   ns.print("\nRoller Bowler Stock Platform Active")
 
-  //startTime = Date.now()
-  //endTime = startTime + runningInterval 
-  
   //After that, use the budget to buy low and sell high, within ten percent.
-  //Run for fifteen minutes 
   while (true){
     prices.current = ns.stock.getPrice(target)
 
@@ -91,14 +98,21 @@ export async function main(ns) {
 
     //Buy Low
     if (buyRange == true && (ns.stock.getPosition(target))[0] < 1 && stockAction == "Rising"){
-      ns.stock.buyStock(target, ns.stock.getMaxShares(target))
-      ns.print("Buying Max in Stock: " + target)
+      if (typeof initialBudget == 'undefined'){
+        ns.stock.buyStock(target, ns.stock.getMaxShares(target))
+        ns.print("Buying Max in Stock: " + target)
+      } else{
+        ns.print("Buying Within Budget: " + ns.formatNumber(initialBudget))
+        currentBuy = Math.floor(initialBudget / ns.stock.getAskPrice(target))
+        ns.print("Current Order Set to " + currentBuy + " shares at " + ns.formatNumber(ns.stock.getAskPrice(target)))
+        ns.stock.buyStock(target, currentBuy)
+      }
     }
 
     //Sell High
     if (sellRange == true && (ns.stock.getPosition(target))[0] > 0 && stockAction == "Falling"){
-      ns.stock.sellStock(target, ns.stock.getMaxShares(target))
-      ns.print("Selling Max in Stock: " + target)
+      ns.stock.sellStock(target, ns.stock.getPosition(target)[0])
+      ns.print("Selling All Stock in: " + target)
     }
 
     ns.print("Current: $" + ns.formatNumber(prices.current) + " | Max: $" + ns.formatNumber(prices.max.price) + " | Min: $" + ns.formatNumber(prices.min.price))

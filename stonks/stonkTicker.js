@@ -1,19 +1,17 @@
 /** @param {NS} ns */
 export async function main(ns) {
-  let serverProcesses = ns.ps("home")
   let stockTicker = []
 
   //Text colors
-  var yellow = "\x1b[33m"
-  var red = "\x1b[31m"
-  var green = "\x1b[32m"
-  var white = "\x1b[37m"
-  var reset = "\x1b[0m"
+  const yellow = "\x1b[33m"
+  const red = "\x1b[31m"
+  const green = "\x1b[32m"
+  const white = "\x1b[37m"
+  const reset = "\x1b[0m"
 
   //Disable superfluous logs
   ns.disableLog("sleep")
   let priceLine = ""
-  let forecastLine = ""
   let longLine = ""
   let shortLine = ""
 
@@ -47,17 +45,18 @@ export async function main(ns) {
       ns.print(priceLine)
       ns.print("------------------------------------------------")
       
-      let longProfit = findLongProfit(ns, playerPosition, stockTicker[i])
-      let shortProfit = findShortProfit(ns, playerPosition, stockTicker[i])
+      //let longProfit = findLongProfit(ns, playerPosition, stockTicker[i])
+      //let shortProfit = findShortProfit(ns, playerPosition, stockTicker[i])
+      let profits = findProfit(ns, playerPosition, stockTicker[i])
 
       if(playerPosition[0] > 0){
         longLine = "LNG: " + yellow + ns.formatNumber(playerPosition[0]) + reset + " @ " + green + "$" + ns.formatNumber(playerPosition[1]) + reset
-        longLine = longLine + " | Net: " + longProfit[0] + " (" + longProfit[1]+")"
+        longLine = longLine + " | Net: " + profits.long.cash + " (" + profits.long.percent +")"
         ns.print(longLine)
       }
       if(playerPosition[2] > 0){
         shortLine = "SRT: " + yellow + ns.formatNumber(playerPosition[2]) + reset + " @ " + green + "$" + ns.formatNumber(playerPosition[3]) + reset;
-        shortLine += " | Net: " + shortProfit[0] + " (" + shortProfit[1] + ")"
+        shortLine += " | Net: " + profits.short.cash + " (" + profit.short.percent + ")"
         ns.print(shortLine)        
       }
       if(playerPosition[0] == 0 && playerPosition[2] == 0){
@@ -84,50 +83,63 @@ function updateTicker(ns){
 }
 
 
-/** @param {NS} ns */
-function findLongProfit(ns,position, target){
-  var yellow = "\x1b[33m"
-  var red = "\x1b[31m"
-  var reset = "\x1b[0m"
+function findProfit(ns, position, target){
+  //Text Colors
+  const green = "\x1b[32m"
+  const yellow = "\x1b[33m"
+  const red = "\x1b[31m"
+  const reset = "\x1b[0m"
 
-  const longCost = position[0] * position [1]
-  const totalSell = ns.stock.getBidPrice(target) * position[0]
-
-  let answer = (totalSell - longCost) - 100000
-  if (answer >= 0){
-    return ([(yellow + "$" + ns.formatNumber(answer)+ reset),(yellow + ns.formatPercent((answer / longCost)) + reset)])
+  let answer= {
+    long: {
+      cash: "",
+      percent: "",
+    },
+    short: {
+      cash: "",
+      percent: "",
+    }
   }
-  else{
-    return ([(red + "-$" + ns.formatNumber(answer * -1)+ reset), (red + ns.formatPercent((answer / longCost))+ reset)])
-  }
-}
 
-
-/** @param {NS} ns */
-function findShortProfit(ns,position, target){
-  var yellow = "\x1b[33m"
-  var red = "\x1b[31m"
-  var reset = "\x1b[0m"
-
+  const longCost = position[0] * position[1]
   const shortCost = position[2] * position[3]
+
+  const totalSell = ns.stock.getBidPrice(target) * position[0]
   const totalBuy = ns.stock.getAskPrice(target) * position[2]
-  
-  let answer = (totalBuy - shortCost) - 100000
-  if (answer >= 0){
-    return([(yellow + "$" + ns.formatNumber(answer)+ reset), (yellow + ns.formatPercent((answer / shortCost))+ reset)])
+
+  //Calculate Long Profit
+  let lProfit = (totalSell - longCost) - 100000
+  if (lProfit >= 0){
+    answer.long.cash =  yellow + "$" + ns.formatNumber(lProfit)+ reset;
+    answer.long.percent = green + ns.formatPercent((lProfit/longCost))+ reset;
   }
   else{
-    return([((red + "-$"+ ns.formatNumber(answer * -1))+ reset), (red + ns.formatPercent((answer/shortCost))+reset)])
+    answer.long.cash = red + "$" + ns.formatNumber(lProfit * -1)+ reset;
+    answer.long.percent = red + ns.formatPercent((lProfit/longCost))+ reset
   }
+  
+  //Calculate Short Profit
+  let sProfit = (totalBuy - shortCost) - 100000
+  if (sProfit >= 0){
+    answer.short.cash = yellow + "$" + ns.formatNumber(sProfit) + reset
+    answer.short.percent = green + ns.formatPercent((sProfit/shortCost)) + reset
+  }
+  else{
+    answer.short.cash = red + "-$" + ns.formatNumber(sProfit * -1) + reset
+    answer.short.percent = red + ns.formatPercent(sProfit/shortCost) + reset
+  }
+
+  return answer
 }
+
 
 
   /** @param {NS} ns */
   function forecastFormat(ns, forecast){
-    var red = "\x1b[31m"
-    var green = "\x1b[32m"
-    var white = "\x1b[37m"
-    var reset = "\x1b[0m"
+    const red = "\x1b[31m"
+    const green = "\x1b[32m"
+    const white = "\x1b[37m"
+    const reset = "\x1b[0m"
     
     if(forecast > 0.50){
       return "Action: " + green + ns.formatPercent(forecast) + reset;
@@ -139,10 +151,9 @@ function findShortProfit(ns,position, target){
 
 function datePrinter()
 {
-  var red = "\x1b[31m"
-  var green = "\x1b[32m"
-  var white = "\x1b[37m"
-  var reset = "\x1b[0m"
+  const green = "\x1b[32m"
+  const white = "\x1b[37m"
+  const reset = "\x1b[0m"
   
   const months = ["01", "02", "03", "04", "05", "06", "07",
    "08", "09", "10", "11", "12"];

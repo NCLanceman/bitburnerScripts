@@ -29,10 +29,6 @@ export async function main(ns) {
 
 function datePrinter()
 {
-  const green = "\x1b[32m"
-  const white = "\x1b[37m"
-  const reset = "\x1b[0m"
-  
   const months = ["01", "02", "03", "04", "05", "06", "07",
    "08", "09", "10", "11", "12"];
   let clock = new Date(Date.now())
@@ -49,5 +45,5 @@ function datePrinter()
 
   let date = months[clock.getMonth()] + "/" + clock.getDate() + "/" + clock.getFullYear() 
   let time = hours + minutes
-  return date + " @ " + time
+  return date + " @ " + time 
 }
